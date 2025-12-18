@@ -126,7 +126,7 @@ def filter_table(table, domain):
 
         table = table[
             table.apply(
-                lambda row: date(int(row["start_year"]), int(row["start_month"]), 1) <=date(end_date.year, end_date.month, 1),
+                lambda row: date(int(row["start_year"]), int(row["start_month"]), 1) <= date(end_date.year, end_date.month, 1),
                 axis=1
             )
         ]
@@ -185,7 +185,7 @@ def export_page():
     # if st.session_state["all_export_miso"] == [] or st.session_state["all_export_cyber"] == [] or st.session_state["all_export_ca"] == []:
         refresh_export_data()
 
-    if "export_active_tab" not in st.session_state:
+    if "active_export_tab" not in st.session_state:
         st.session_state["active_export_tab"] = "miso"
 
     def set_active_tab(tab):
@@ -230,6 +230,12 @@ def render_miso_tab():
     st.subheader("PSYOP Export")
     include_series_children = None
     include_exec_children = None
+    # Initialize editable tables as empty DataFrames to avoid NameError
+    editable_miso = pd.DataFrame()
+    editable_execution_table = pd.DataFrame()
+    editable_assessment_table = pd.DataFrame()
+    original_assessment_df = pd.DataFrame()
+    miso_table = pd.DataFrame()
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         include_miso = st.checkbox("Include PSYOP Series", value=True)
@@ -278,7 +284,8 @@ def render_miso_tab():
                 miso_table = filter_table(miso_table, "miso")
                 cols_to_convert = ['start_year', 'end_year', 'calendar_year']
                 for col in cols_to_convert:
-                    miso_table[col] = miso_table[col].apply(lambda x: str(int(x)) if pd.notnull(x) else '')
+                    if col in miso_table.columns:
+                        miso_table[col] = miso_table[col].astype('Int64').astype(str).replace('<NA>', '')
 
             column_configuration = {}
             for col in miso_table.columns:
@@ -416,9 +423,7 @@ def render_miso_tab():
 
             for col in boolean_cols:
                 if col in assessment_table.columns:
-                    assessment_table[f"{col}_display"] = assessment_table[col].apply(
-                        lambda x: "—" if x is None else x
-                    )
+                    assessment_table[f"{col}_display"] = assessment_table[col].fillna("—")
 
             # Map series_name and execution_name to assessments_table
             if ("series_id" in assessment_table.columns and "series_id" in miso_table.columns and "series_name" in miso_table.columns):
@@ -494,29 +499,37 @@ def render_miso_tab():
 
     preview_btn = st.button("Preview export", type="primary")
     if preview_btn or st.session_state["show_export_preview"]:
-        selected_series = editable_miso[editable_miso["Select"]] if include_miso else pd.DataFrame()
+        if include_miso and not editable_miso.empty:
+            selected_series = editable_miso[editable_miso["Select"]]
+        else:
+            selected_series = pd.DataFrame()
 
-        if include_series_children and (include_executions or include_assessments):
-            for _, row in editable_miso.iterrows():
-                if row["Select"]:
-                    if include_executions:
-                        for idx, exec_row in editable_execution_table.iterrows():
-                            if exec_row.series_id == row.series_id:
-                                editable_execution_table.at[idx, 'Select'] = True
-                    if include_assessments:
-                        for idx, assess_row in editable_assessment_table.iterrows():
-                            if assess_row.series_id == row.series_id:
-                                editable_assessment_table.at[idx, 'Select'] = True
+        if include_series_children and (include_executions or include_assessments) and not editable_miso.empty:
+            selected_series_ids = editable_miso[editable_miso["Select"]]["series_id"]
+            if include_executions and not editable_execution_table.empty and "series_id" in editable_execution_table.columns:
+                editable_execution_table.loc[
+                    editable_execution_table["series_id"].isin(selected_series_ids), 
+                    "Select"
+                ] = True
+            if include_assessments and not editable_assessment_table.empty and "series_id" in editable_assessment_table.columns:
+                editable_assessment_table.loc[
+                    editable_assessment_table["series_id"].isin(selected_series_ids), 
+                    "Select"
+                ] = True
 
-        if include_exec_children and include_assessments:
-            for _, row in editable_execution_table.iterrows():
-                if row["Select"]:
-                    for idx, assess_row in editable_assessment_table.iterrows():
-                        if assess_row.series_id == row.series_id:
-                            editable_assessment_table.at[idx, 'Select'] = True
+        if include_exec_children and include_assessments and not editable_execution_table.empty:
+            selected_execution_ids = editable_execution_table[editable_execution_table["Select"]]["execution_id"]
+            if not editable_assessment_table.empty and "execution_id" in editable_assessment_table.columns:
+                editable_assessment_table.loc[
+                    editable_assessment_table["execution_id"].isin(selected_execution_ids), 
+                    "Select"
+                ] = True
 
-        selected_execution = editable_execution_table[editable_execution_table["Select"]] if include_executions else pd.DataFrame()
-        if include_assessments:
+        if include_executions and not editable_execution_table.empty:
+            selected_execution = editable_execution_table[editable_execution_table["Select"]]
+        else:
+            selected_execution = pd.DataFrame()
+        if include_assessments and not editable_assessment_table.empty:
             selected_ids = editable_assessment_table.loc[editable_assessment_table["Select"], "assessment_id"].tolist()
             selected_assessment = original_assessment_df[original_assessment_df["assessment_id"].isin(selected_ids)]
             export_desired_order = ["series_name","miso_execution","progress","threshold_met"]
@@ -572,6 +585,9 @@ def render_miso_tab():
 # ---- Cyber Tab ----
 def render_cyber_tab():
     st.subheader("Cyber Export")
+    # Initialize editable tables as empty DataFrames to avoid NameError
+    editable_cyber = pd.DataFrame()
+    editable_cyber_assessment_table = pd.DataFrame()
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         include_cyber = st.checkbox("Include Cyber Series", value=True)
@@ -612,7 +628,8 @@ def render_cyber_tab():
                 cyber_table = filter_table(cyber_table, "cyber")
                 cols_to_convert = ['start_year', 'end_year', 'calendar_year']
                 for col in cols_to_convert:
-                    cyber_table[col] = cyber_table[col].apply(lambda x: str(int(x)) if pd.notnull(x) else '')
+                    if col in cyber_table.columns:
+                        cyber_table[col] = cyber_table[col].astype('Int64').astype(str).replace('<NA>', '')
 
             column_configuration = {}
             for col in cyber_table.columns:
@@ -717,17 +734,23 @@ def render_cyber_tab():
 
     cyber_preview_btn = st.button("Preview export", type="primary", key="cyber_preview_export")
     if cyber_preview_btn or st.session_state["show_cyber_export_preview"]:
-        selected_cyber = editable_cyber[editable_cyber["Select"]] if include_cyber else pd.DataFrame()
+        if include_cyber and not editable_cyber.empty:
+            selected_cyber = editable_cyber[editable_cyber["Select"]]
+        else:
+            selected_cyber = pd.DataFrame()
 
-        if include_cyber_series_children and (include_cyber_assessments):
-            for _, row in editable_cyber.iterrows():
-                if row["Select"]:
-                    if include_cyber_assessments:
-                        for idx, assess_row in editable_cyber_assessment_table.iterrows():
-                            if assess_row.cyber_id == row.cyber_id:
-                                editable_cyber_assessment_table.at[idx, 'Select'] = True
+        if include_cyber_series_children and include_cyber_assessments and not editable_cyber.empty:
+            selected_cyber_ids = editable_cyber[editable_cyber["Select"]]["cyber_id"]
+            if not editable_cyber_assessment_table.empty and "cyber_id" in editable_cyber_assessment_table.columns:
+                editable_cyber_assessment_table.loc[
+                    editable_cyber_assessment_table["cyber_id"].isin(selected_cyber_ids), 
+                    "Select"
+                ] = True
 
-        selected_cyber_assessment = editable_cyber_assessment_table[editable_cyber_assessment_table["Select"]] if include_cyber_assessments else pd.DataFrame()
+        if include_cyber_assessments and not editable_cyber_assessment_table.empty:
+            selected_cyber_assessment = editable_cyber_assessment_table[editable_cyber_assessment_table["Select"]]
+        else:
+            selected_cyber_assessment = pd.DataFrame()
         st.session_state["show_cyber_export_preview"] = True
 
     # ---- Export Preview and Excel Download ----
