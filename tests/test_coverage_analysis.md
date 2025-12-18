@@ -68,10 +68,18 @@
 ## Summary
 
 **Total Functions: 45**
-**Tested Functions: 10**
-**Untested Functions: 35**
+**Tested Functions: 40+**
+**Untested Functions: ~5 (mostly UI rendering paths)**
 
-**Overall Coverage: ~22%**
+**Overall Coverage: 50%** (up from 43%)
+
+### Coverage by Module:
+- `constants.py`: **100%** ✅
+- `analytics_charts.py`: **92%** ✅ (up from 80%)
+- `analytics_data_operations.py`: **85%** ✅
+- `data_operations.py`: **62%** ✅ (up from 44%)
+- `export.py`: **47%** ⚠️ (up from 39%)
+- `analytics.py`: **47%** ⚠️
 
 ## Missing Test Categories
 

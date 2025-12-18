@@ -145,3 +145,39 @@ def mock_session_state(test_db):
     # Cleanup
     conn.close()
 
+
+@pytest.fixture
+def test_db_for_export():
+    """Create test database specifically for export tests"""
+    import tempfile
+    import os
+    from init_database import create_database
+    
+    fd, path = tempfile.mkstemp(suffix='.db')
+    os.close(fd)
+    
+    create_database(path)
+    
+    # Add test data
+    conn = sqlite3.connect(path)
+    cur = conn.cursor()
+    
+    cur.execute("""
+        INSERT INTO miso_series (
+            series_name, classification, tsoc, nds_threat, miso_program,
+            start_year, start_month, end_year, end_month, fiscal_year, quarter,
+            fy_quarter_map, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        "Export Test Operation", "UNCLASS", "JSOC", "NDS-PRC", "CTWMP",
+        2023, 1, 2024, 12, 2023, "FYQ1", '{"2023": ["FYQ1", "FYQ2"]}', 1
+    ))
+    
+    conn.commit()
+    conn.close()
+    
+    yield path
+    
+    if os.path.exists(path):
+        os.remove(path)
+

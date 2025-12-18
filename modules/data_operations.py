@@ -463,12 +463,19 @@ def pull_series_and_cyber_data(type):
         result_dicts = [dict(zip(columns, row)) for row in updated_all_series]
     except Exception as e:
         st.warning(e)
+        result_dicts = []
+        updated_all_series = []
+        columns = []
+        cyber_columns = []
     if type == "Home":
-        return result_dicts
+        return result_dicts if 'result_dicts' in locals() else []
     else:
-        result_dict_miso = [dict(zip(columns, row)) for row in updated_all_series if row[-2] == "psyop"]
-        result_dict_cyber = [dict(zip(cyber_columns, row)) for row in updated_all_series if row[-2] =="cyber"]
-        return [result_dict_miso, result_dict_cyber]
+        if 'updated_all_series' in locals() and len(updated_all_series) > 0:
+            result_dict_miso = [dict(zip(columns, row)) for row in updated_all_series if row[-2] == "psyop"]
+            result_dict_cyber = [dict(zip(cyber_columns, row)) for row in updated_all_series if row[-2] =="cyber"]
+            return [result_dict_miso, result_dict_cyber]
+        else:
+            return [[], []]
 
 
 def clean_strict_input(field_name, raw_value):
