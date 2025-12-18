@@ -7,6 +7,7 @@ import sqlite3
 import re
 import requests
 import logging
+from collections import defaultdict
 from dateutil import parser
 from modules.constants import MONTH_MAP
 
@@ -369,22 +370,13 @@ def pull_series_and_cyber_data(type):
                 FROM miso_location
                 """)
         all_locations = cur.fetchall()
-        location_map = {}
-        country_map = {}
-        country_code_map = {}
+        location_map = defaultdict(list)
+        country_map = defaultdict(list)
+        country_code_map = defaultdict(list)
         for item in all_locations:
-     
-            if item[3] != None: # if city is not none
-                if location_map.get(item[1]) == None: # if seriesId is not none
-                    location_map[item[1]] = [item[3]] # store array of cities as value to seriesId as key
-                else:
-                    location_map[item[1]].append(item[3])
-                   
-            if country_map.get(item[1]) == None:
-                country_map[item[1]] = [st.session_state["iso3_country_map"].get(item[2])]
-         
-                country_code_map[item[1]] = [item[2]]
-            else:
+            if item[3] is not None:  # if city is not none
+                location_map[item[1]].append(item[3])  # store array of cities as value to seriesId as key
+            if item[2] is not None:  # if country_code is not none
                 country_map[item[1]].append(st.session_state["iso3_country_map"].get(item[2]))
                 country_code_map[item[1]].append(item[2])
         columns.append("city(s)")
@@ -393,16 +385,13 @@ def pull_series_and_cyber_data(type):
         columns.append("country_code")    
         updated_all_series = []
         for row in all_series:
-            if location_map.get(row[0]) != None:
-                row = row + (",".join(location_map.get(row[0])),)
-            else:
-                row = row + (None,)
-            if country_map.get(row[0]) != None:          
-                row = row + (",".join(list(set(country_map.get(row[0])))),)
-            else:
-                row = row + (None,)
+            cities = location_map.get(row[0], [])
+            row = row + (",".join(cities) if cities else None,)
+            countries = country_map.get(row[0], [])
+            row = row + (",".join(list(set(countries))) if countries else None,)
             row = row + ("psyop",)
-            row = row + (",".join(list(set(country_code_map.get(row[0])))),)
+            country_codes = country_code_map.get(row[0], [])
+            row = row + (",".join(list(set(country_codes))) if country_codes else None,)
 
             updated_all_series.append(row)
 
@@ -431,33 +420,24 @@ def pull_series_and_cyber_data(type):
                 FROM cyber_location
                 """)
         cyber_locations = cur.fetchall()
-        location_map = {}
-        country_map = {}
-        country_code_map = {}
+        location_map = defaultdict(list)
+        country_map = defaultdict(list)
+        country_code_map = defaultdict(list)
         for item in cyber_locations:
-            if item[3] != None: # if city is not none
-                if location_map.get(item[1]) == None: # if seriesId is not none
-                    location_map[item[1]] = [item[3]] # store array of cities as value to seriesId as key
-                else:
-                    location_map[item[1]].append(item[3])
-            if country_map.get(item[1]) == None:
-                country_map[item[1]] = [st.session_state["iso3_country_map"].get(item[2])]
-                country_code_map[item[1]] = [item[2]]
-            else:
+            if item[3] is not None:  # if city is not none
+                location_map[item[1]].append(item[3])  # store array of cities as value to seriesId as key
+            if item[2] is not None:  # if country_code is not none
                 country_map[item[1]].append(st.session_state["iso3_country_map"].get(item[2]))
                 country_code_map[item[1]].append(item[2])
 
         for row in cyber_series:
-            if location_map.get(row[0]) != None:
-                row = row + (",".join(location_map.get(row[0])),)
-            else:
-                row = row + (None,)
-            if country_map.get(row[0]) != None:
-                row = row + (",".join(list(set(country_map.get(row[0])))),)
-            else:
-                row = row + (None,)
+            cities = location_map.get(row[0], [])
+            row = row + (",".join(cities) if cities else None,)
+            countries = country_map.get(row[0], [])
+            row = row + (",".join(list(set(countries))) if countries else None,)
             row = row + ("cyber",)
-            row = row + (",".join(list(set(country_code_map.get(row[0])))),)
+            country_codes = country_code_map.get(row[0], [])
+            row = row + (",".join(list(set(country_codes))) if country_codes else None,)
 
             updated_all_series.append(row)
         result_dicts = [dict(zip(columns, row)) for row in updated_all_series]
