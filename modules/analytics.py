@@ -217,11 +217,13 @@ def analytics_page():
             }
 
             series_set = [] # This will hold unique series that appear in the map after filters have been applied. To be used in the sum column
-            for key in dict(sorted(series_map.items())).keys():
+            seen_series_ids = set() # Track seen series IDs for O(1) lookup instead of O(n)
+            for key in sorted(series_map.keys()):
                 # Populate the series_set array to be used for sum column
                 for series in series_map.get(key):
-                    duplicate = [obj for obj in series_set if str(obj["series_id"]) == str(series["series_id"])]
-                    if len(duplicate) == 0:
+                    series_id_str = str(series["series_id"])
+                    if series_id_str not in seen_series_ids:
+                        seen_series_ids.add(series_id_str)
                         series_set.append(series)
 
                 # Populate all of the other columns based on FY and quarter
