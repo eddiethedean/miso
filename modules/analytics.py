@@ -9,6 +9,13 @@ from modules.constants import TSOCS, QUARTERS
 from modules.export import format_excel_sheet, get_available_fiscal_years
 from modules.analytics_charts import miso_program_chart, active_miso_series_chart, series_by_audience_chart, series_by_threat_chart, hpem_phase_chart, means_chart
 
+# Helper function to get both count and names in one call (avoids duplicate filtering)
+def get_count_and_names(arr, type, all_assessments, all_executions, is_tsoc_specific, other_category):
+    """Returns tuple of (count, names_list) for a given type."""
+    count = how_many_of_type(arr, type, all_assessments, all_executions, is_tsoc_specific, other_category, False)
+    names = how_many_of_type(arr, type, all_assessments, all_executions, is_tsoc_specific, other_category, True)
+    return count, names
+
 # def analytics_page():
 #     st.image("images/construction.jpg")
 
@@ -230,39 +237,49 @@ def analytics_page():
                 table1Data[key] = []
                 table1NamesData[key] = []
                 for type in regular_types:
-                    table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "", False))
-                    table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "", True))
+                    count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, False, "")
+                    table1Data[key].append(count)
+                    table1NamesData[key].append(names)
                 for type in types_with_tsoc:
-                    table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "", False))
-                    table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "", True))
+                    count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, True, "")
+                    table1Data[key].append(count)
+                    table1NamesData[key].append(names)
                 if include_classifications:
                     for type in other_class:
-                        table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "classification", False))
-                        table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "classification", True))
+                        count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, False, "classification")
+                        table1Data[key].append(count)
+                        table1NamesData[key].append(names)
                 if include_threats:
                     for type in other_threats:
-                        table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "threats", False))
-                        table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "threats", True))
+                        count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, False, "threats")
+                        table1Data[key].append(count)
+                        table1NamesData[key].append(names)
                 if include_miso_program:
                     for type in other_miso_program:
-                        table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "miso_program", False))
-                        table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "miso_program", True))
+                        count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, False, "miso_program")
+                        table1Data[key].append(count)
+                        table1NamesData[key].append(names)
                 if include_means:
                     for type in other_dissemination_means:
-                        table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "means", False))
-                        table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, False, "means", True))
+                        count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, False, "means")
+                        table1Data[key].append(count)
+                        table1NamesData[key].append(names)
                 for type in other_class_with_tsocs:
-                    table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "classification", False))
-                    table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "classification", True))
+                    count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, True, "classification")
+                    table1Data[key].append(count)
+                    table1NamesData[key].append(names)
                 for type in other_threats_with_tsocs:
-                    table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "threats", False))
-                    table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "threats", True))
+                    count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, True, "threats")
+                    table1Data[key].append(count)
+                    table1NamesData[key].append(names)
                 for type in other_miso_program_with_tsocs:
-                    table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "miso_program", False))
-                    table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "miso_program", True))
+                    count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, True, "miso_program")
+                    table1Data[key].append(count)
+                    table1NamesData[key].append(names)
                 for type in other_means_with_tsocs:
-                    table1Data[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "means", False))
-                    table1NamesData[key].append(how_many_of_type(series_map.get(key), type, all_assessments, all_executions, True, "means", True))
+                    count, names = get_count_and_names(series_map.get(key), type, all_assessments, all_executions, True, "means")
+                    table1Data[key].append(count)
+                    table1NamesData[key].append(names)
 
             # Now we properly build the sum column
             sumArray = []
