@@ -14,13 +14,19 @@ def get_means_for_series(all_executions,series, check_for_social_media=False):
     toReturn = set()
     for execution in all_executions:
         if check_for_social_media:
-            if execution["series_id"] == series["series_id"] and ("Social Media" in execution["dissemination_method"].replace("{", "").replace("}", "") or "RBR (social media)" in execution["dissemination_method"].replace("{", "").replace("}", "")):
-                cleaned_list = execution["dissemination_means"].replace("{", "").replace("}", "").replace("\"", "")
-                toReturn.update(cleaned_list.split(','))
+            if execution["series_id"] == series["series_id"]:
+                dissemination_method = execution.get("dissemination_method")
+                dissemination_means = execution.get("dissemination_means")
+                if dissemination_method and ("Social Media" in dissemination_method.replace("{", "").replace("}", "") or "RBR (social media)" in dissemination_method.replace("{", "").replace("}", "")):
+                    if dissemination_means:
+                        cleaned_list = dissemination_means.replace("{", "").replace("}", "").replace("\"", "")
+                        toReturn.update(cleaned_list.split(','))
         else:
             if execution["series_id"] == series["series_id"]:
-                cleaned_list = execution["dissemination_means"].replace("{", "").replace("}", "").replace("\"", "")
-                toReturn.update(cleaned_list.split(','))
+                dissemination_means = execution.get("dissemination_means")
+                if dissemination_means:
+                    cleaned_list = dissemination_means.replace("{", "").replace("}", "").replace("\"", "")
+                    toReturn.update(cleaned_list.split(','))
     return toReturn
 
 # Calculates how many series given a restriction exist in the system. Can optionally return names instead of counts
@@ -91,6 +97,7 @@ def how_many_of_type(arr, type, all_assessments, all_executions, is_tsoc_specifi
 
 # Pulls classifications that were input by the user as "other"
 def pull_other_classifications():
+    other_class_set = set()
     try:
         cur = st.session_state["conn"].cursor()
         cur.execute("""
@@ -99,7 +106,6 @@ def pull_other_classifications():
         WHERE is_active = True
         """)
         classifications = cur.fetchall()
-        other_class_set = set()
         for classification in classifications:
             if classification[0] not in CLASSIFICATIONS:
                 other_class_set.add(classification[0])
@@ -109,6 +115,7 @@ def pull_other_classifications():
 
 # Pulls threats that were input by the user as "other"
 def pull_other_threats():
+    other_threat_set = set()
     try:
         cur = st.session_state["conn"].cursor()
         cur.execute("""
@@ -117,7 +124,6 @@ def pull_other_threats():
         WHERE is_active = True
         """)
         threats = cur.fetchall()
-        other_threat_set = set()
         for threat in threats:
             if threat[0] not in THREATS:
                 other_threat_set.add(threat[0])
@@ -128,6 +134,7 @@ def pull_other_threats():
 
 # Pulls miso programs  that were input by the user as "other"
 def pull_other_miso_program():
+    other_programs_set = set()
     try:
         cur = st.session_state["conn"].cursor()
         cur.execute("""
@@ -136,7 +143,6 @@ def pull_other_miso_program():
         WHERE is_active = True
         """)
         other_programs = cur.fetchall()
-        other_programs_set = set()
         for program in other_programs:
             if program[0] not in MISO_PROGRAMS:
                 other_programs_set.add(program[0])
@@ -147,6 +153,7 @@ def pull_other_miso_program():
 
 # Pulls dissemination means that were input by the user as "other"
 def pull_other_means():
+    other_means_set = set()
     try:
         cur = st.session_state["conn"].cursor()
         cur.execute("""
@@ -155,7 +162,6 @@ def pull_other_means():
         WHERE is_active = True
         """)
         other_means = cur.fetchall()
-        other_means_set = set()
         for means in other_means:
             mean_list = means[0].lstrip(means[0][0]).rstrip(means[0][-1]).split(",")
             for actual_mean in mean_list:
@@ -164,7 +170,6 @@ def pull_other_means():
                     other_means_set.add(actual_mean)
     except Exception as e:
         st.warning(e)
-    # return other_programs_set
     return other_means_set
 
 # Takes a category and adds "tsoc" lables to it based on the list of allowed tsocs

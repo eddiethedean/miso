@@ -9,7 +9,7 @@ SERIES_SCHEMA = [
     'executing_unit_service',
     'series_actively_disseminating',
     'miso_program',
-    'miso_objective'
+    'miso_objective',
     'supporting_miso_objective',
     'start_month',
     'start_year',

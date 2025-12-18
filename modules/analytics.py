@@ -3,8 +3,6 @@ import pandas as pd
 import io
 import plotly.express as px
 from datetime import datetime
-from contextlib import suppress
-from numpy.random import default_rng as rng
 from modules.data_operations import pull_series_and_cyber_data, pull_miso_assessments, pull_miso_executions
 from modules.analytics_data_operations import pull_other_threats, add_tsocs_to_array, pull_other_miso_program, pull_other_means, how_many_of_type, pull_other_classifications
 from modules.constants import TSOCS, QUARTERS
@@ -185,27 +183,23 @@ def analytics_page():
             if include_hpem:
                 regular_types.extend(['Data Not Available','Too Early','Awareness','Understanding','Attitude','Preference','Intention','Behavior Change'])
 
-            # Need to loop through the "other" categories and add them to the data types list potentially with tsoc varients
+            # Need to loop through the "other" categories and add them to the data types list potentially with tsoc variants
             other_class_with_tsocs = []
             other_threats_with_tsocs = []
             other_miso_program_with_tsocs = []
             other_means_with_tsocs = []
-            with suppress(NameError):                
-                if include_classifications_tsoc:
-                    for classification in other_class:
-                        other_class_with_tsocs.extend(add_tsocs_to_array(classification, filter_tsoc_list))
-            with suppress(NameError):
-                if include_threat_tsoc:
-                    for threat in other_threats:
-                        other_threats_with_tsocs.extend(add_tsocs_to_array(threat, filter_tsoc_list))
-            with suppress(NameError):
-                if include_miso_program_tsoc:
-                    for program in other_miso_program:
-                        other_miso_program_with_tsocs.extend(add_tsocs_to_array(program, filter_tsoc_list))
-            with suppress(NameError):
-                if include_means_tsoc:
-                    for mean in other_dissemination_means:
-                        other_means_with_tsocs.extend(add_tsocs_to_array(mean, filter_tsoc_list))
+            if include_classifications_tsoc:
+                for classification in other_class:
+                    other_class_with_tsocs.extend(add_tsocs_to_array(classification, filter_tsoc_list))
+            if include_threat_tsoc:
+                for threat in other_threats:
+                    other_threats_with_tsocs.extend(add_tsocs_to_array(threat, filter_tsoc_list))
+            if include_miso_program_tsoc:
+                for program in other_miso_program:
+                    other_miso_program_with_tsocs.extend(add_tsocs_to_array(program, filter_tsoc_list))
+            if include_means_tsoc:
+                for mean in other_dissemination_means:
+                    other_means_with_tsocs.extend(add_tsocs_to_array(mean, filter_tsoc_list))
 
             others_with_tsoc = [
                  *other_class_with_tsocs,
@@ -430,6 +424,7 @@ def analytics_page():
                     filter_years = st.multiselect("Reporting Fiscal Year(s)", available_years, key="analytics_fiscal_years_charts")
 
                 with col2:
+                    filter_quarters = []
                     if filter_years != []:
                         filter_quarters = st.multiselect("Reporting Quarter(s)", QUARTERS, key="charts_fiscal_quarter")
                    

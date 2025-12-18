@@ -1,5 +1,5 @@
 """
-For functions used by by multiple pages
+For functions used by multiple pages
 """
 import streamlit as st
 import pandas as pd
@@ -294,6 +294,7 @@ def month_name_from_any(val):
     return MONTH_NUM_TO_NAME.get(n, "")
 
 def pull_cyber_assessments():
+    result_dicts = []
     try:
         cur = st.session_state["conn"].cursor()
         cur.execute("""
@@ -311,6 +312,7 @@ def pull_cyber_assessments():
     return result_dicts
 
 def pull_miso_assessments():
+    result_dicts = []
     try:
         cur = st.session_state["conn"].cursor()
         cur.execute("""
@@ -329,6 +331,7 @@ def pull_miso_assessments():
 
 
 def pull_miso_executions():
+    result_dicts = []
     try:
         cur = st.session_state["conn"].cursor()
         cur.execute("""
@@ -344,8 +347,21 @@ def pull_miso_executions():
     except Exception as e:
                 st.warning(e)
     return result_dicts
-# home or export
 def pull_series_and_cyber_data(type):
+    """
+    Pulls series and cyber data from the database.
+    
+    Args:
+        type: "Home", "Export", or "Analytics" - determines which columns to return
+        
+    Returns:
+        For "Home": List of dictionaries with series data
+        For "Export" or "Analytics": List containing [miso_data, cyber_data]
+    """
+    result_dicts = []
+    updated_all_series = []
+    columns = []
+    cyber_columns = []
     try:
         cur = st.session_state["conn"].cursor()
         if type == "Home":
@@ -468,9 +484,9 @@ def pull_series_and_cyber_data(type):
         columns = []
         cyber_columns = []
     if type == "Home":
-        return result_dicts if 'result_dicts' in locals() else []
+        return result_dicts
     else:
-        if 'updated_all_series' in locals() and len(updated_all_series) > 0:
+        if len(updated_all_series) > 0:
             result_dict_miso = [dict(zip(columns, row)) for row in updated_all_series if row[-2] == "psyop"]
             result_dict_cyber = [dict(zip(cyber_columns, row)) for row in updated_all_series if row[-2] =="cyber"]
             return [result_dict_miso, result_dict_cyber]
