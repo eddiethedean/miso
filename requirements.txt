@@ -1,0 +1,11 @@
+streamlit
+plotly
+pandas
+psycopg2-binary
+requests
+python-dateutil
+numpy
+xlsxwriter
+faker
+pytest
+pytest-cov
